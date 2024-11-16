@@ -1,46 +1,139 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="container mt-3">
-    <h1 style="text-align: center; margin-bottom: 20px;">Профили бойцов</h1>
-    <ul class="list-unstyled" style="max-width: 800px; margin: 0 auto; padding: 0;">
-        {% for fighter in fighter_info %}
-            <li style="margin-bottom: 30px; border: 1px solid #ddd; border-radius: 8px; padding: 20px; background-color: #f9f9f9;">
-                <h2 style="margin-bottom: 15px;">Боец: {{ fighter[1] }}</h2>
-                <ul style="list-style-type: none; padding-left: 0;">
-                    <li><strong>Побед:</strong> {{ fighter[2] }}</li>
-                    <li><strong>Поражений:</strong> {{ fighter[3] }}</li>
-                    <li><strong>КД:</strong> {{ fighter[4] }}</li>
-                </ul>
-            </li>
-        {% endfor %}
-    </ul>
+<div class="container mt-5">
+    <h1 class="mb-4">Профиль бойца: {{ fighter_info[0][1] }}</h1>
 
-    <h2 style="text-align: center; margin-top: 40px;">Бои этого бойца:</h2>
-    <ul class="list-unstyled" style="max-width: 800px; margin: 0 auto; padding: 0;">
-        {% for fight in fights %}
-            {% if fight[1] != 'skip' and fight[4] != 'skip' %}
-                <li style="margin-bottom: 15px; padding: 10px; background-color: #f1f1f1; border-radius: 5px;">
-                    <strong>Бой:</strong> {{ fight[1] }} {{ fight[2] }} - {{ fight[3] }} {{ fight[4] }}
-                </li>
-            {% endif %}
-        {% endfor %}
-    </ul>
-
-    <div style="text-align: center; margin-top: 30px;">
-        <a href="{{ url_for('list_profiles') }}" class="btn" style="background-color: #007bff; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none;">К профилям</a>
+    <h2 class="mb-3">Общая статистика</h2>
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+            <thead class="table-light">
+                <tr>
+                    <th>Побед</th>
+                    <th>Поражений</th>
+                    <th>КД</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fighter in fighter_info %}
+                    <tr>
+                        <td>{{ fighter[2] }}</td>
+                        <td>{{ fighter[3] }}</td>
+                        <td>
+                            {% if fighter[2] > 0 and fighter[3] > 0 %}
+                                {{ "%.2f"|format(fighter[2] / fighter[3]) }}
+                            {% else %}
+                                {{ fighter[2] }}
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
+
+    <h2 class="mt-5 mb-3">КД против каждого бойца</h2>
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+            <thead class="table-light">
+                <tr>
+                    <th>Соперник</th>
+                    <th>Побед</th>
+                    <th>Поражений</th>
+                    <th>КД</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for opponent, stats in records.items() %}
+                {% if opponent != 'skip' %}
+                    <tr>
+                        <td>{{ opponent }}</td>
+                        <td>{{ stats.wins }}</td>
+                        <td>{{ stats.loses }}</td>
+                        <td>
+                            {% if stats.loses > 0 %}
+                                {{ "%.2f"|format(stats.wins / stats.loses) }}
+                            {% else %}
+                                {{ stats.wins }}
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <h2 class="mt-5 mb-3">Чистота</h2>
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+            <thead class="table-light">
+                <tr>
+                    <th>Соперник</th>
+                    <th>Успешные</th>
+                    <th>Пропущенные</th>
+                    <th>Чистота</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for opponent, stats in scores.items() %}
+                {% if opponent != 'skip' %}
+                    <tr>
+                        <td>{{ opponent }}</td>
+                        <td>{{ stats.scored }}</td>
+                        <td>{{ stats.conceded }}</td>
+                        <td>
+                            {% if stats.conceded > 0 %}
+                                {{ "%.2f"|format(stats.scored / stats.conceded) }}
+                            {% else %}
+                                {{ stats.scored }}
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <h2 class="mt-5 mb-3">Динамика чистоты боев</h2>
+    {% if plot_url_cleanness %}
+        <img src="data:image/png;base64,{{ plot_url_cleanness }}" alt="Динамика чистоты боев">
+    {% else %}
+        <p>Нет данных для построения графика.</p>
+    {% endif %}
+
+    <h2 class="mt-5 mb-3">Динамика КД</h2>
+    {% if plot_url_kd %}
+        <img src="data:image/png;base64,{{ plot_url_kd }}" alt="Динамика КД">
+    {% else %}
+        <p>Нет данных для построения графика.</p>
+    {% endif %}
+
+    <h2 class="mt-5 mb-3">Бои</h2>
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+            <thead class="table-light">
+                <tr>
+                    <th>Боец 1</th>
+                    <th>Очки 1</th>
+                    <th>Очки 2</th>
+                    <th>Боец 2</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fight in fights %}
+                {% if fight[1] != 'skip' and fight[4] != 'skip' %}
+                    <tr>
+                        <td>{{ fight[1] }}</td>
+                        <td>{{ fight[2] }}</td>
+                        <td>{{ fight[3] }}</td>
+                        <td>{{ fight[4] }}</td>
+                    </tr>
+                {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <a href="{{ url_for('list_profiles') }}" class="btn btn-primary">К профилям</a>
 </div>
-
-<style>
-  /* Адаптивность для мобильных устройств */
-  @media (max-width: 768px) {
-      ul {
-          padding: 0;
-      }
-
-      ul li {
-          font-size: 16px;
-      }
-  }
-</style>
 {% endblock %}
